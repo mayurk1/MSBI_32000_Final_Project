@@ -1,3 +1,8 @@
+# Run once and provide Personal Access Token
+#install.packages("gitcreds")
+#library(gitcreds)
+#gitcreds_set()
+
 # Save data file to same directory or update path below:
 colonData <- read.table("colon.txt", header = TRUE)
 
@@ -9,7 +14,11 @@ studyA = colonData[c(TRUE, FALSE),]
 #studyB = na.omit(colonData[c(FALSE, TRUE),])
 studyB = colonData[c(FALSE, TRUE),]
 
+sum(is.na(studyA$time))
 #str(subset(colonData, etype=1, rx=="Obs"))
+library(tidyverse)
+map(studyA, ~sum(is.na(.)))
+map(studyB, ~sum(is.na(.)))
 
 # EDA - Input variable here to run EDA
 if (FALSE){
