@@ -1,39 +1,18 @@
-# Run once and provide Personal Access Token
-#install.packages("gitcreds")
-#library(gitcreds)
-#gitcreds_set()
+# Run once and provide Personal Access Token - this is just if you want GitHub for your R file
+if (FALSE){
+  install.packages("gitcreds")
+  library(gitcreds)
+  gitcreds_set()
+}
 
 # Save data file to same directory or update path below:
 colonData <- read.table("colon.txt", header = TRUE)
 
-# Grabs every first value from colonData
-#studyA = na.omit(colonData[c(TRUE, FALSE),])
-studyA = colonData[c(TRUE, FALSE),]
+# Grabs Reoccurance Data from colonData
+studyA = subset(colonData, etype==1)
 
-# Grabs every second value from colonData
-#studyB = na.omit(colonData[c(FALSE, TRUE),])
-studyB = colonData[c(FALSE, TRUE),]
-
-sum(is.na(studyA$time))
-#str(subset(colonData, etype=1, rx=="Obs"))
-library(tidyverse)
-map(studyA, ~sum(is.na(.)))
-map(studyB, ~sum(is.na(.)))
-
-# EDA - Input variable here to run EDA
-if (FALSE){
-  dataToUse <- combB
-  library(DataExplorer)
-  introduce(dataToUse)
-  create_report(dataToUse)
-}
-
-# Stats summary
-if (FALSE){
-  library(skimr)
-  skim(combA)
-  skim(obsA)
-}
+# Grabs Death Data from colonData
+studyB = subset(colonData, etype==2)
 
 # Pre/Post groups 
 obsA <- subset(studyA, rx=="Obs")
@@ -44,27 +23,100 @@ obsB <- subset(studyB, rx=="Obs")
 levB <- subset(studyB, rx=="Lev")
 combB <- subset(studyB, rx=="Lev+5FU")
 
-str(combB)
-str(obsB)
+# EDA - Input variable here to run EDA
+if (FALSE){
+  dataToUse <- combBs
+  library(DataExplorer)
+  introduce(dataToUse)
+  create_report(dataToUse)
+}
 
-# Basically seems as though the data is split on death and reoccruence, but the status variable 
-# dicating the censoring status is the same for both? Anyways study might be comparing the status rate 
-# vs the treatment type
-summary(obsB)
-summary(combB)
+# Stats summary
+if (FALSE){
+  library(skimr)
+  skim(combB)
+}
 
+# Temp - ignore
+count(obsB, status)
+count(combB, status)
+
+# Describe Distributions
+library(ggpubr)
+# Box Plots
+ggboxplot(studyA, x = "rx", y = "time", 
+          #color = "rx", palette = c("#00AFBB", "#E7B800", "#FC4E07"),
+          order = c("Obs", "Lev", "Lev+5FU"),
+          ylab = "Reoccurence", xlab = "Treatment")
+
+ggboxplot(studyB, x = "rx", y = "time", 
+          #color = "rx", palette = c("#00AFBB", "#E7B800", "#FC4E07"),
+          order = c("Obs", "Lev", "Lev+5FU"),
+          ylab = "Death", xlab = "Treatment")
+
+# Mean Plots
+ggline(studyA, x = "rx", y = "time", 
+       add = c("mean_se", "jitter"), 
+       order = c("Obs", "Lev", "Lev+5FU"),
+       #color = "rx", palette = c("#00AFBB", "#E7B800", "#FC4E07"),
+       ylab = "Reoccurence", xlab = "Treatment")
+
+ggline(studyB, x = "rx", y = "time", 
+       add = c("mean_se", "jitter"), 
+       order = c("Obs", "Lev", "Lev+5FU"),
+       #color = "rx", palette = c("#00AFBB", "#E7B800", "#FC4E07"),
+       ylab = "Death", xlab = "Treatment")
+
+
+# Kaplan-Meier Survival Plot (Survival Rate Over Time)
+library(survival)
+plot(survfit(Surv(time, status) ~ rx, data=studyA))
+
+
+# Calculate Percent Difference
+recA = sum(obsA$status==1)
+recAC = sum(combA$status==1)
+rA = recA/315
+rAC = recAC/304
+# Percent diff. 35% vs paper 40%
+difference = (rA-rAC)/((rA+rAC)/2)
+difference
+
+
+# T test proves sig. diff. in reoccurrence rates between obs and comb
+# treatment groups
+t.test(obsA$status, combA$status)
+
+# T test also proves sig. diff. in death rates between obs and comb
+# treatment groups
 t.test(obsB$status, combB$status)
-#t.test(obBA$nodes, combB$nodes)
 
 
-# Notes
-# split up based on pre vs post 
-# can look at just one sample, look at deaths compared to treatment and can just chi sq vs t test, lead up log regression, 
+# Cox Regression Model
+coxph(Surv(time, status) ~ rx, data = studyB)
+
+coxph(Surv(time, status) ~ rx, data = studyB) %>% 
+  gtsummary::tbl_regression(exp = TRUE)
 
 
-# Regression analysis 
-library(tidyverse)
-library(MASS)
+# ANOVA - iffy on this
+## Compute the analysis of variance
+res.aov <- aov(time ~ rx, data = studyA)
+TukeyHSD(res.aov)
+## Residuals
+plot(res.aov, 1)
+## QQ - lol not normal
+plot(res.aov, 2)
+
+## Compute the analysis of variance
+res.aov <- aov(time ~ rx, data = studyB)
+TukeyHSD(res.aov)
+## Residuals
+plot(res.aov, 1)
+## QQ - lol not normal
+plot(res.aov, 2)
+
+
 
 
 
