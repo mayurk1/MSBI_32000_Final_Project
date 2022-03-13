@@ -165,13 +165,13 @@ Survivial Curves with Confidence Intervals
 # Clean ouput 
 library(ggfortify)
 library(survival)
-fit <- survfit(Surv(time, status) ~ rx, data=studyA)
+fit <- survfit(Surv(years, status) ~ rx, data=studyA)
 autoplot(fit)
 ```
 
 
 ```{r}
-fit <- survfit(Surv(time, status) ~ rx, data=studyB)
+fit <- survfit(Surv(years, status) ~ rx, data=studyB)
 autoplot(fit)
 ```
 
@@ -181,19 +181,56 @@ treatment Box plots Survival curve Assumptions for T test T tests
 Kaplan-Meier survival analysis ## Assumptions for Cox
 
 
+## T-Test
+
+```{r}
+# Calculate Percent Difference
+recA = sum(obsA$status==1)
+recAC = sum(combA$status==1)
+rA = recA/315
+rAC = recAC/304
+# Percent diff. 35% vs paper 40%
+difference = (rA-rAC)/((rA+rAC)/2)
+difference
+
+
+# T test proves sig. diff. in reoccurrence rates between obs and comb
+# treatment groups
+t.test(obsA$status, combA$status)
+
+# T test also proves sig. diff. in death rates between obs and comb
+# treatment groups
+t.test(obsB$status, combB$status)
+```
+
+
 ## Cox Regression
+
+"Proportional hazards models are a class of survival models in statistics. Survival models relate the time that passes, before some event occurs, to one or more covariates that may be associated with that quantity of time. In a proportional hazards model, the unique effect of a unit increase in a covariate is multiplicative with respect to the hazard rate."
 
 ```{r}
 library(survival)
-coxModelA = coxph(Surv(time, status) ~ xnum, data=studyA)
+coxModelA <- coxph(Surv(time, status) ~ xnum, data=studyA)
 summary(coxModelA)
 
-coxph(Surv(time, status) ~ xnum, data=studyA) %>% 
-  gtsummary::tbl_regression(exp = TRUE)
-
+coxModelA %>% 
+  gtsummary::tbl_regression(exp = TRUE, label = xnum ~ "Treatment") %>%
+  modify_caption("Table 3. Reoccurance Cox Regression")
 ```
 
-This shows a 40% less reduction in the rate of cancer reoccurance using
+
+```{r}
+library(survival)
+coxModelB <- coxph(Surv(time, status) ~ xnum, data=studyB)
+summary(coxModelA)
+
+coxModelB %>% 
+  gtsummary::tbl_regression(exp = TRUE, label = list(xnum ~ "Treatment")) %>%
+  modify_caption("Table 4. Death Rate Cox Regression")
+```
+
+
+This shows a 40% less reduction in the rate of cancer recurrence using
 combined therapy. The "Lev" single therapy only offered a 2% reduction
 in the reoccurance rate.
 
