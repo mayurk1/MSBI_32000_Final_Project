@@ -9,10 +9,10 @@ if (FALSE){
 colonData <- read.table("colon.txt", header = TRUE)
 
 # Grabs Reoccurance Data from colonData
-studyA = subset(colonData, etype==1)
+studyA <- subset(colonData, etype==1)
 
 # Grabs Death Data from colonData
-studyB = subset(colonData, etype==2)
+studyB <- subset(colonData, etype==2)
 
 # Pre/Post groups 
 obsA <- subset(studyA, rx=="Obs")
@@ -70,6 +70,8 @@ ggline(studyB, x = "rx", y = "time",
 
 # Kaplan-Meier Survival Plot (Survival Rate Over Time)
 library(survival)
+library(survminer)
+# Survival curve by treatment
 plot(survfit(Surv(time, status) ~ rx, data=studyA))
 
 
@@ -91,31 +93,52 @@ t.test(obsA$status, combA$status)
 # treatment groups
 t.test(obsB$status, combB$status)
 
+# Logistic Regression - looks like a good result?
+library(glm2)
+glm.fit <- glm(status ~ rx, data=studyA, family=binomial)
+summary(glm.fit)
 
 # Cox Regression Model
-coxph(Surv(time, status) ~ rx, data = studyB)
+# Cox Regression 
+## 0.5 times less likely to get reoccuurance?
+resCoxA <- coxph(Surv(time, status) ~ rx, data=subData)
+summary(resCoxA)
 
-coxph(Surv(time, status) ~ rx, data = studyB) %>% 
+# Overall survival curve
+ggsurvplot(survfit(resCoxA, data=subData ~rx),
+           ggtheme = theme_minimal())
+
+ggsurvplot(survfit(resCoxA, data=studyA), color = "#2E9FDF",
+           ggtheme = theme_minimal())
+
+# Survival Curve by treatment - doesnt work
+subData <- subset(studyA, rx == "Obs" | rx == "Lev+5FU")
+km_trt_fit <- survfit(Surv(time, status) ~ rx, data=subData)
+autoplot(km_trt_fit)
+
+
+# Survival Probability Curves
+library(rms)
+survplot(kmByRx)
+
+## Plot the baseline survival function
+res.cox <- coxph(Surv(time, status) ~ rx, data=studyA)
+summary(res.cox)
+
+
+coxModelA = coxph(Surv(time, status) ~ rx, data=studyA)
+summary(coxModelA)
+
+coxph(Surv(time, status) ~ rx, data=studyA) %>% 
+  gtsummary::tbl_regression(exp = TRUE)
+
+coxph(Surv(time, status) ~ rx, data=studyB)
+
+coxph(Surv(time, status) ~ rx, data=studyB) %>% 
   gtsummary::tbl_regression(exp = TRUE)
 
 
-# ANOVA - iffy on this
-## Compute the analysis of variance
-res.aov <- aov(time ~ rx, data = studyA)
-TukeyHSD(res.aov)
-## Residuals
-plot(res.aov, 1)
-## QQ - lol not normal
-plot(res.aov, 2)
-
-## Compute the analysis of variance
-res.aov <- aov(time ~ rx, data = studyB)
-TukeyHSD(res.aov)
-## Residuals
-plot(res.aov, 1)
-## QQ - lol not normal
-plot(res.aov, 2)
-
+#KM plot add this in addition to survival curves
 
 
 

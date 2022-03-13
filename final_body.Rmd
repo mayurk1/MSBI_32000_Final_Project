@@ -1,0 +1,224 @@
+---
+output:
+  html_document: default
+  pdf_document: default
+---
+
+
+```{r setup, include=FALSE}
+library(knitr)
+library(rmdformats)
+
+## Global options
+options(max.print = "75")
+knitr::opts_chunk$set(
+  echo = FALSE, cache = FALSE, prompt = FALSE,
+  tidy = FALSE, comment = NA,
+  message = FALSE, warning = FALSE
+)
+opts_knit$set(width = 75)
+```
+
+# Introdution
+
+# Research Questions 
+
+# Data Source and Description
+
+# Data Exploration and Munging  
+
+# Code and tables
+
+## Syntax highlighting
+
+# Introduction
+Colon Cancer background
+Reocurrance info
+Survival rate info
+
+### Import Data
+```{r}
+colonData <- read.table("colon.txt", header = TRUE)
+
+# Grabs Reoccurance Data from colonData
+studyA <- subset(colonData, etype==1)
+
+# Grabs Death Data from colonData
+studyB <- subset(colonData, etype==2)
+
+# Add year column
+studyA$years <- studyA$time / 365.25
+studyB$years <- studyB$time / 365.25
+
+# Convert treatment to number
+studyA$xnum <- studyA$rx
+studyB$xnum <- studyB$rx
+
+studyA$xnum[studyA$xnum == "Obs"] <- 0
+studyA$xnum[studyA$xnum == "Lev"] <- 1
+studyA$xnum[studyA$xnum == "Lev+5FU"] <- 2
+
+studyB$xnum[studyB$xnum == "Obs"] <- 0
+studyB$xnum[studyB$xnum == "Lev"] <- 1
+studyB$xnum[studyB$xnum == "Lev+5FU"] <- 2
+
+# Treatment groups 
+obsA <- subset(studyA, rx=="Obs")
+levA <- subset(studyA, rx=="Lev")
+combA <- subset(studyA, rx=="Lev+5FU")
+
+obsB <- subset(studyB, rx=="Obs")
+levB <- subset(studyB, rx=="Lev")
+combB <- subset(studyB, rx=="Lev+5FU")
+
+# Convert days to years
+```
+
+
+# Research Questions 
+Treatments types and survival rate and reoccurance (studyA/B)
+Research hypothesis
+
+# Data Source and Description
+From the study
+Describe the data 
+2 events, 3 treatments
+
+# Data Exploration and Munging
+## Distributions of Treatments
+### Box plots
+
+Reoccurance Data
+
+```{r, echo=FALSE}
+library(ggpubr)
+ggboxplot(studyA, x = "rx", y = "years", 
+          #color = "rx", palette = c("#00AFBB", "#E7B800", "#FC4E07"),
+          order = c("Obs", "Lev", "Lev+5FU"),
+          ylab = "Years", xlab = "Treatment",)
+```
+
+
+Death Data
+
+```{r, echo=FALSE}
+ggboxplot(studyB, x = "rx", y = "years", 
+          #color = "rx", palette = c("#00AFBB", "#E7B800", "#FC4E07"),
+          order = c("Obs", "Lev", "Lev+5FU"),
+          ylab = "Years", xlab = "Treatment",)
+```
+
+
+### Survival Curve
+Reoccurance data
+
+
+```{r, echo=FALSE}
+# Kaplan-Meier Survival Plot (Survival Rate Over Time)
+library(survival)
+library(survminer)
+# Survival curve by treatment
+plot(survfit(Surv(years, status) ~ rx, data=studyA),
+     ylab= "Proportion with no Reoccurance",
+     xlab = "Years",
+     title = "Reoccurance Rate by Treatment"
+     )
+```
+
+
+Survival Data
+
+
+```{r, echo=FALSE}
+# Kaplan-Meier Survival Plot (Survival Rate Over Time)
+library(survival)
+library(survminer)
+# Survival curve by treatment
+plot(survfit(Surv(years, status) ~ rx, data=studyB),
+     ylab= "Proportion with no Death",
+     xlab = "Years",
+     title = "Death Rate by Treatment"
+     )
+```
+
+
+Distribution of status for each treatment
+Distribution of time for each treatment
+Box plots
+Survival curve
+Assumptions for T test
+T tests 
+Kaplan-Meier survival analysis
+## Assumptions for Cox
+
+```{r, echo=FALSE}
+library(survival)
+
+```
+
+## Cox Regression
+
+```{r, echo=FALSE}
+coxModelA = coxph(Surv(time, status) ~ xnum, data=studyA)
+summary(coxModelA)
+
+coxph(Surv(time, status) ~ xnum, data=studyA) %>% 
+  gtsummary::tbl_regression(exp = TRUE)
+
+```
+
+
+This shows a 40% less reduction in the rate of cancer reoccurance using combined therapy. The "Lev" single therapy only offered a 2% reduction in the reoccurance rate.
+
+
+# Conclusions
+Significance/results from tests 
+Future Study
+
+
+```{r sh, echo=TRUE, eval=TRUE}
+say_hello <- function (name) {
+  paste("Hello,", name, "!")
+}
+
+say_hello("world")
+```
+
+
+## Verbatim
+
+Here is the structure of the `penguins` dataset.
+
+```{r penguins_str, echo=TRUE}
+library(palmerpenguins)
+str(penguins)
+```
+
+## Table
+
+Sample table output.
+
+```{r table}
+tab <- table(penguins$island, penguins$species)
+kable(tab)
+```
+
+Sample `DT:datatable` output.
+
+```{r dt}
+library(DT)
+DT::datatable(penguins)
+```
+
+Here is a crosstab displayed in several different ways with a "pills"
+interface. To do this, just pass your `table()` result to the `pilltabs()`
+function.
+
+```{r pilltabs, results="asis"}
+tab <- table(penguins$sex, penguins$species)
+pilltabs(tab)
+
+```
+
+
+
