@@ -1,0 +1,277 @@
+---
+title: "MSBI 32000 Winter 2022 Semester"
+subtitle: "Project Title"
+date: "Due 19 March 2022"
+author: Your Names
+output:
+  rmdformats::readthedown:
+    code_folding: show
+    self_contained: true
+    thumbnails: false
+    lightbox: false
+pkgdown:
+  as_is: true    
+---
+
+
+```{r, results="asis", echo=FALSE, message=FALSE, warning=FALSE}
+res <- knitr::knit_child('_example_body.Rmd', quiet = TRUE)
+cat(res, sep = '\n')
+```
+
+# Introdution
+
+Before the development of effective chemotherapy for colon cancer, treatment was limited to surgery. Recurrence was frequent and life-expectancy after initial treatment not long. 
+
+However, from 1985 to 1990, adjuvant chemotherapy began to be developed and implemented in combination with surgery. 
+
+After simultaneous advancements in detection and screening, death rates due to colon cancer began to fall.
+
+
+```{r sh, echo=TRUE, eval=TRUE}
+cancerdeathdata <- read.table("ColonCancerDeathRate.txt")
+plot(cancerdeathdata)
+
+```
+
+Today, excluding skin cancer, colon cancer is the third most common type of cancer in the U.S., but there are now more treatments available, including immunotherapy and radiation therapy.
+
+
+
+# Data Source
+
+This dataset comes from one of the first successful trials of adjuvant chemotherapy for colon cancer, using a combination of levamisole and fluorouracil.
+
+The trial examined both Stage B2 (locally invasive) and Stage C (regional nodal involvement) colon cancer, but this dataset contains information only on subjects with Stage C.
+
+The dataset had a complicated format. For each subject, there were two rows of data entry: one measuring data related to the first recurrence of cancer, such as days until recurrence, and the other measuring data related to death, such as presence of cancer in other regions. The rows were categorized by the "etype" nominal variable, which we used to sort the data.
+
+In addition, each row had a "status" nominal variable, that indicated whether the etype was positive or negative – whether there was or was not recurrence, and whether or not the subject had died. This required additional sorting of the data.
+
+Each subject in the study was assigned a treatment – observation, levamisole (alone), or levamisole and fluorouracil – and this was recorded by the "rx" nominal variable for each row of data, allowing us to sort, analyze, and compare the effectiveness of the different treatments.
+
+
+# Description of Variables
+
+We first performed some exploratory data analysis to see which variables were affected by treatment. Most variables were not affected by treatment - only the "nodes" variable and the "time" variable were affected by treatment.
+
+## Extent of Local Cancer Spread
+
+The nominal variable "extent", which recorded whether the cancer had spread to specific nearby regions, was not affected by treatment:
+
+```{r sh, echo=TRUE, eval=TRUE}
+library(ggpubr)
+
+submucosaAobs <- sum(studyA["rx"] == "Obs" & studyA["extent"] == "1")*100/sum(studyA$study==1)
+submucosaAlev <- sum(studyA["rx"] == "Lev" & studyA["extent"] == "1")*100/sum(studyA$study==1)
+submucosaAlev5FU <- sum(studyA["rx"] == "Lev+5FU" & studyA["extent"] == "1")*100/sum(studyA$study==1)
+
+muscleAobs <- sum(studyA["rx"] == "Obs" & studyA["extent"] == "2")*100/sum(studyA$study==1)
+muscleAlev <- sum(studyA["rx"] == "Lev" & studyA["extent"] == "2")*100/sum(studyA$study==1)
+muscleAlev5FU <- sum(studyA["rx"] == "Lev+5FU" & studyA["extent"] == "2")*100/sum(studyA$study==1)
+
+serosaAobs <- sum(studyA["rx"] == "Obs" & studyA["extent"] == "3")*100/sum(studyA$study==1)
+serosaAlev <- sum(studyA["rx"] == "Lev" & studyA["extent"] == "3")*100/sum(studyA$study==1)
+serosaAlev5FU <- sum(studyA["rx"] == "Lev+5FU" & studyA["extent"] == "3")*100/sum(studyA$study==1)
+
+contiguousAobs <- sum(studyA["rx"] == "Obs" & studyA["extent"] == "4")*100/sum(studyA$study==1)
+contiguousAlev <- sum(studyA["rx"] == "Lev" & studyA["extent"] == "4")*100/sum(studyA$study==1)
+contiguousAlev5FU <- sum(studyA["rx"] == "Lev+5FU" & studyA["extent"] == "4")*100/sum(studyA$study==1)
+
+extentdf <- data.frame(Region = rep(c("Submucosa", "Muscle", "Serosa", "Contiguous Structures"), each=3), 
+                       Treatment = rep(c("Obs", "Lev", "Lev+5FU"),4),
+                       Percentage = c(submucosaAobs, submucosaAlev, submucosaAlev5FU, 
+                                      muscleAobs, muscleAlev, muscleAlev5FU,
+                                      serosaAobs, serosaAlev, serosaAlev5FU, 
+                                      contiguousAobs, contiguousAlev, contiguousAlev5FU))
+
+ggbarplot(extentdf, "Region", "Percentage", fill="Treatment", position=position_dodge(), title = "Regions Affected at Recurrence")
+```
+
+```{r sh, echo=TRUE, eval=TRUE}
+submucosaBobs <- sum(studyB["rx"] == "Obs" & studyB["extent"] == "1")*100/sum(studyB$study==1)
+submucosaBlev <- sum(studyB["rx"] == "Lev" & studyB["extent"] == "1")*100/sum(studyB$study==1)
+submucosaBlev5FU <- sum(studyB["rx"] == "Lev+5FU" & studyB["extent"] == "1")*100/sum(studyB$study==1)
+
+muscleBobs <- sum(studyB["rx"] == "Obs" & studyB["extent"] == "2")*100/sum(studyB$study==1)
+muscleBlev <- sum(studyB["rx"] == "Lev" & studyB["extent"] == "2")*100/sum(studyB$study==1)
+muscleBlev5FU <- sum(studyB["rx"] == "Lev+5FU" & studyB["extent"] == "2")*100/sum(studyB$study==1)
+
+serosaBobs <- sum(studyB["rx"] == "Obs" & studyB["extent"] == "3")*100/sum(studyB$study==1)
+serosaBlev <- sum(studyB["rx"] == "Lev" & studyB["extent"] == "3")*100/sum(studyB$study==1)
+serosaBlev5FU <- sum(studyB["rx"] == "Lev+5FU" & studyB["extent"] == "3")*100/sum(studyB$study==1)
+
+contiguousBobs <- sum(studyB["rx"] == "Obs" & studyB["extent"] == "4")*100/sum(studyB$study==1)
+contiguousBlev <- sum(studyB["rx"] == "Lev" & studyB["extent"] == "4")*100/sum(studyB$study==1)
+contiguousBlev5FU <- sum(studyB["rx"] == "Lev+5FU" & studyB["extent"] == "4")*100/sum(studyB$study==1)
+
+extentBdf <- data.frame(Region = rep(c("Submucosa", "Muscle", "Serosa", "Contiguous Structures"), each=3), 
+                        Treatment = rep(c("Obs", "Lev", "Lev+5FU"),4),
+                        Percentage = c(submucosaBobs, submucosaBlev, submucosaBlev5FU, muscleBobs, muscleBlev, muscleBlev5FU,
+                                       serosaBobs, serosaBlev, serosaBlev5FU, contiguousBobs, contiguousBlev, contiguousBlev5FU))
+
+ggbarplot(extentBdf, "Region", "Percentage", fill="Treatment", position=position_dodge(), title = "Regions Affected at Death")
+```
+
+
+## Obstruction of Colon by Tumour
+
+The nominal variable "obstruct", which specified whether the colon was obstructed by the cancerous tumour, was not affected by treatment:
+
+```{r sh, echo=TRUE, eval=TRUE}
+obstructAobs <- sum(studyA["rx"] == "Obs" & studyA["obstruct"] == "1")*100/sum(studyA$study==1)
+obstructAlev <- sum(studyA["rx"] == "Lev" & studyA["obstruct"] == "1")*100/sum(studyA$study==1)
+obstructAlev5FU <- sum(studyA["rx"] == "Lev+5FU" & studyA["obstruct"] == "1")*100/sum(studyA$study==1)
+
+noobstructAobs <- sum(studyA["rx"] == "Obs" & studyA["obstruct"] == "0")*100/sum(studyA$study==1)
+noobstructAlev <- sum(studyA["rx"] == "Lev" & studyA["obstruct"] == "0")*100/sum(studyA$study==1)
+noobstructAlev5FU <- sum(studyA["rx"] == "Lev+5FU" & studyA["obstruct"] == "0")*100/sum(studyA$study==1)
+
+obstructAdf <- data.frame(Obstruction = rep(c("Obstruction", "No Obstruction"), each=3), 
+                          Treatment = rep(c("Obs", "Lev", "Lev+5FU"),2),
+                          Percentage = c(obstructAobs, obstructAlev, obstructAlev5FU, 
+                                         noobstructAobs, noobstructAlev, noobstructAlev5FU))
+
+ggbarplot(obstructAdf, "Obstruction", "Percentage", fill="Treatment", position=position_dodge(), title = "Obstruction of Colon at Recurrence")
+
+```
+
+```{r sh, echo=TRUE, eval=TRUE}
+obstructBobs <- sum(studyB["rx"] == "Obs" & studyB["obstruct"] == "1")*100/sum(studyB$study==1)
+obstructBlev <- sum(studyB["rx"] == "Lev" & studyB["obstruct"] == "1")*100/sum(studyB$study==1)
+obstructBlev5FU <- sum(studyB["rx"] == "Lev+5FU" & studyB["obstruct"] == "1")*100/sum(studyB$study==1)
+
+noobstructBobs <- sum(studyB["rx"] == "Obs" & studyB["obstruct"] == "0")*100/sum(studyB$study==1)
+noobstructBlev <- sum(studyB["rx"] == "Lev" & studyB["obstruct"] == "0")*100/sum(studyB$study==1)
+noobstructBlev5FU <- sum(studyB["rx"] == "Lev+5FU" & studyB["obstruct"] == "0")*100/sum(studyB$study==1)
+
+obstructBdf <- data.frame(Obstruction = rep(c("Obstruction", "No Obstruction"), each=3), 
+                          Treatment = rep(c("Obs", "Lev", "Lev+5FU"),2),
+                          Percentage = c(obstructBobs, obstructBlev, obstructBlev5FU, 
+                                         noobstructBobs, noobstructBlev, noobstructBlev5FU))
+
+ggbarplot(obstructBdf, "Obstruction", "Percentage", fill="Treatment", position=position_dodge(), title = "Obstruction of Colon at Death")
+```
+
+
+
+## Perforation of Colon by Tumour
+
+The nominal variable "perfor", which specified whether the colon was perforated by the cancerous tumour, was not affected by treatment:
+
+```{r sh, echo=TRUE, eval=TRUE}
+perforAobs <- sum(studyA["rx"] == "Obs" & studyA["perfor"] == "1")*100/sum(studyA$study==1)
+perforAlev <- sum(studyA["rx"] == "Lev" & studyA["perfor"] == "1")*100/sum(studyA$study==1)
+perforAlev5FU <- sum(studyA["rx"] == "Lev+5FU" & studyA["perfor"] == "1")*100/sum(studyA$study==1)
+
+noperforAobs <- sum(studyA["rx"] == "Obs" & studyA["perfor"] == "0")*100/sum(studyA$study==1)
+noperforAlev <- sum(studyA["rx"] == "Lev" & studyA["perfor"] == "0")*100/sum(studyA$study==1)
+noperforAlev5FU <- sum(studyA["rx"] == "Lev+5FU" & studyA["perfor"] == "0")*100/sum(studyA$study==1)
+
+perforAdf <- data.frame(Perforation= rep(c("Perforation", "No Perforation"), each=3), 
+                        Treatment = rep(c("Obs", "Lev", "Lev+5FU"),2),
+                        Percentage = c(perforAobs, perforAlev, perforAlev5FU, 
+                                       noperforAobs, noperforAlev, noperforAlev5FU))
+
+ggbarplot(perforAdf, "Perforation", "Percentage", fill="Treatment", position=position_dodge(), title = "Perforation of Colon at Recurrence")
+```
+
+```{r sh, echo=TRUE, eval=TRUE}
+perforBobs <- sum(studyB["rx"] == "Obs" & studyB["perfor"] == "1")*100/sum(studyB$study==1)
+perforBlev <- sum(studyB["rx"] == "Lev" & studyB["perfor"] == "1")*100/sum(studyB$study==1)
+perforBlev5FU <- sum(studyB["rx"] == "Lev+5FU" & studyB["perfor"] == "1")*100/sum(studyB$study==1)
+
+noperforBobs <- sum(studyB["rx"] == "Obs" & studyB["perfor"] == "0")*100/sum(studyB$study==1)
+noperforBlev <- sum(studyB["rx"] == "Lev" & studyB["perfor"] == "0")*100/sum(studyB$study==1)
+noperforBlev5FU <- sum(studyB["rx"] == "Lev+5FU" & studyB["perfor"] == "0")*100/sum(studyB$study==1)
+
+perforBdf <- data.frame(Perforation = rep(c("Perforation", "No Perforation"), each=3), 
+                        Treatment = rep(c("Obs", "Lev", "Lev+5FU"),2),
+                        Percentage = c(perforBobs, perforBlev, perforBlev5FU, 
+                                       noperforBobs, noperforBlev, noperforBlev5FU))
+
+ggbarplot(perforBdf, "Perforation", "Percentage", fill="Treatment", position=position_dodge(), title = "Perforation of Colon at Death")
+```
+
+
+## Adherence of Cancer to Nearby Organs
+
+The nominal variable "adhere", which specified whether the cancer adhered to nearby organs, was not affected by treatment:
+
+```{r sh, echo=TRUE, eval=TRUE}
+adhereAobs <- sum(studyA["rx"] == "Obs" & studyA["adhere"] == "1")*100/sum(studyA$study==1)
+adhereAlev <- sum(studyA["rx"] == "Lev" & studyA["adhere"] == "1")*100/sum(studyA$study==1)
+adhereAlev5FU <- sum(studyA["rx"] == "Lev+5FU" & studyA["adhere"] == "1")*100/sum(studyA$study==1)
+
+noadhereAobs <- sum(studyA["rx"] == "Obs" & studyA["adhere"] == "0")*100/sum(studyA$study==1)
+noadhereAlev <- sum(studyA["rx"] == "Lev" & studyA["adhere"] == "0")*100/sum(studyA$study==1)
+noadhereAlev5FU <- sum(studyA["rx"] == "Lev+5FU" & studyA["adhere"] == "0")*100/sum(studyA$study==1)
+
+adhereAdf <- data.frame(Adherence = rep(c("Adherence", "No Adherence"), each=3), 
+                        Treatment = rep(c("Obs", "Lev", "Lev+5FU"),2),
+                        Percentage = c(adhereAobs, adhereAlev, adhereAlev5FU, 
+                                       noadhereAobs, noadhereAlev, noadhereAlev5FU))
+
+ggbarplot(adhereAdf, "Adherence", "Percentage", fill="Treatment", position=position_dodge(), title = "Adherence of Cancer to Nearby Organs at Recurrence")
+
+```
+
+```{r sh, echo=TRUE, eval=TRUE}
+adhereBobs <- sum(studyB["rx"] == "Obs" & studyB["adhere"] == "1")*100/sum(studyB$study==1)
+adhereBlev <- sum(studyB["rx"] == "Lev" & studyB["adhere"] == "1")*100/sum(studyB$study==1)
+adhereBlev5FU <- sum(studyB["rx"] == "Lev+5FU" & studyB["adhere"] == "1")*100/sum(studyB$study==1)
+
+noadhereBobs <- sum(studyB["rx"] == "Obs" & studyB["adhere"] == "0")*100/sum(studyB$study==1)
+noadhereBlev <- sum(studyB["rx"] == "Lev" & studyB["adhere"] == "0")*100/sum(studyB$study==1)
+noadhereBlev5FU <- sum(studyB["rx"] == "Lev+5FU" & studyB["adhere"] == "0")*100/sum(studyB$study==1)
+
+adhereBdf <- data.frame(Adherence = rep(c("Adherence", "No Adherence"), each=3), 
+                        Treatment = rep(c("Obs", "Lev", "Lev+5FU"),2),
+                        Percentage = c(adhereBobs, adhereBlev, adhereBlev5FU, 
+                                       noadhereBobs, noadhereBlev, noadhereBlev5FU))
+
+ggbarplot(adhereBdf, "Adherence", "Percentage", fill="Treatment", position=position_dodge(), title = "Adherence of Cancer to Nearby Organs at Death")
+
+```
+
+
+
+## Number of Lymph Nodes with Detectable Cancer
+
+The discrete quantitative variable "nodes", which recorded the number of lymph nodes detected with cancer, was somewhat affected by treatment:
+
+```{r sh, echo=TRUE, eval=TRUE}
+ggboxplot(studyA, x = "rx", y = "nodes", 
+          #color = "rx", palette = c("#00AFBB", "#E7B800", "#FC4E07"),
+          order = c("Obs", "Lev", "Lev+5FU"),
+          ylab = "Number of Cancerous Nodes", xlab = "Treatment",
+          title = "Number of Cancerous Nodes Detected at Recurrence")
+
+```
+
+```{r sh, echo=TRUE, eval=TRUE}
+ggboxplot(studyB, x = "rx", y = "nodes", 
+          #color = "rx", palette = c("#00AFBB", "#E7B800", "#FC4E07"),
+          order = c("Obs", "Lev", "Lev+5FU"),
+          ylab = "Number of Cancerous Nodes", xlab = "Treatment",
+          title = "Number of Cancerous Nodes Detected at Death")
+
+```
+
+
+Thus, for the analysis, we looked at the discrete quantitative "time" variable (measured in days), to determine the effectiveness of the different treatment types.
+
+
+
+# Research Questions
+
+We sought to answer questions about the effectiveness of the different treatment types:
+•	Which treatment had a lower recurrence rate and by how much?
+•	Which treatment had a greater amount of time until recurrence and by how much?
+•	Which treatment had a higher survival rate and by how much?
+•	Which treatment had a higher life expectancy and by how much?
+
+
+# References
+
+1. National Institute of Health, National Cancer Institute: https://seer.cancer.gov/statfacts/html/colorect.html
