@@ -1,14 +1,15 @@
 ---
-title: "MSBI 32000 Winter 2022 Semester"
-subtitle: "Project Title"
-date: "Due 19 March 2022"
-author: Your Names
+title: "MSBI 32000 Winter 2022"
+subtitle: "Final Project"
+date: "19 March 2022"
+author: Mayur Khanna and Matt Migala
 output:
   rmdformats::readthedown:
-    code_folding: show
+    code_folding: hide
     self_contained: true
     thumbnails: false
     lightbox: false
+    css: styles.css
 pkgdown:
   as_is: true    
 ---

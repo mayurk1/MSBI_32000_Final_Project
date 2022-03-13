@@ -72,7 +72,21 @@ ggline(studyB, x = "rx", y = "time",
 library(survival)
 library(survminer)
 # Survival curve by treatment
-plot(survfit(Surv(time, status) ~ rx, data=studyA))
+plot(survfit(Surv(time, status) ~ xnum, data=studyA))
+
+plot(survfit(Surv(years, status) ~ xnum, data=studyA),
+     ylab= "Proportion with no Reoccurance",
+     xlab = "Years",
+     title = "Reoccurance Rate by Treatment",
+     col = c(4,2,3)
+)
+
+plot(survfit(Surv(years, status) ~ xnum, data=studyB),
+     ylab= "Proportion with no Death",
+     xlab = "Years",
+     title = "Death Rate by Treatment",
+     col = c(4,2,3)
+)
 
 
 # Calculate Percent Difference
@@ -124,7 +138,6 @@ survplot(kmByRx)
 ## Plot the baseline survival function
 res.cox <- coxph(Surv(time, status) ~ rx, data=studyA)
 summary(res.cox)
-
 
 coxModelA = coxph(Surv(time, status) ~ rx, data=studyA)
 summary(coxModelA)
