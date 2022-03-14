@@ -1,7 +1,7 @@
 ---
 output:
-  html_document: default
   pdf_document: default
+  html_document: default
   code_folding: hide
 editor_options: 
   markdown: 
@@ -22,32 +22,51 @@ knitr::opts_chunk$set(
 opts_knit$set(width = 75)
 ```
 
-# Introdution
-
-# Research Questions
-
-# Data Source and Description
-
-# Data Exploration and Munging
-
-# Code and tables
-
-## Syntax highlighting
 
 # Introdution
 
-Before the development of effective chemotherapy for colon cancer, treatment was limited to surgery. Recurrence was frequent and life-expectancy after initial treatment not long. 
+Before the development of effective chemotherapy for colon cancer, treatment was limited to surgery. Recurrence was frequent and life-expectancy after initial treatment was not long. 
 
 However, from 1985 to 1990, adjuvant chemotherapy began to be developed and implemented in combination with surgery. 
 
-After simultaneous advancements in detection and screening, death rates due to colon cancer began to fall.
-
-### Import Data
+After simultaneous advancements in detection and screening, death rates due to colon cancer began to fall: a 54% reduction.
 
 ```{r}
+library(ggpubr)
+# Colon Cancer death rate in the US over time.
+cancerData <- read.table("ColonCancerDeathRate.txt", header=TRUE)
+cancerData$Prop <- cancerData$Prop / 100
+g <- ggline(cancerData, x="Year", y="Prop", 
+       plot_type="l", 
+       title="Colon Cancer Death Rate 1975 - 2019",
+       xlab="Year",
+       ylab="Death Rate")
+ggpar(g, ylim=c(0,0.50))
+```
+
+
+Today, excluding skin cancer, colon cancer is the third most common type of cancer in the U.S., but there are now more treatments available, including immunotherapy and radiation therapy. In this study, we will examine the outcomes of a clinical Colon Cancer study that measured the effects of two treatment groups and a control.
+
+
+# Data Source
+
+This data set comes from one of the first successful trials of adjuvant chemotherapy for colon cancer, using a combination of levamisole and fluorouracil.
+
+The trial examined both Stage B2 (locally invasive) and Stage C (regional nodal involvement) colon cancer, but this dataset contains information only on subjects with Stage C.
+
+The data set had a complicated format. For each subject, there were two rows of data entry: one measuring data related to the first recurrence of cancer, such as days until recurrence, and the other measuring data related to death, such as presence of cancer in other regions. The rows were categorized by the "etype" nominal variable, which we used to sort the data.
+
+In addition, each row had a "status" nominal variable, that indicated whether the etype was positive or negative – whether there was or was not recurrence, and whether or not the subject had died. This required additional sorting of the data.
+
+Each subject in the study was assigned a treatment – observation, levamisole (alone), or levamisole and fluorouracil (combined) – and this was recorded by the "rx" nominal variable for each row of data, allowing us to sort, analyze, and compare the effectiveness of the different treatments.
+
+## Import Data
+The below code imports the data sets. Click show to view it.
+
+```{r, echo=TRUE}
 colonData <- read.table("colon.txt", header = TRUE)
 
-# Grabs Reoccurance Data from colonData
+# Grabs Recurrence Data from colonData
 studyA <- subset(colonData, etype==1)
 
 # Grabs Death Data from colonData
@@ -56,6 +75,15 @@ studyB <- subset(colonData, etype==2)
 # Add year column
 studyA$years <- studyA$time / 365.25
 studyB$years <- studyB$time / 365.25
+
+# Treatment groups 
+obsA <- subset(studyA, rx=="Obs")
+levA <- subset(studyA, rx=="Lev")
+combA <- subset(studyA, rx=="Lev+5FU")
+
+obsB <- subset(studyB, rx=="Obs")
+levB <- subset(studyB, rx=="Lev")
+combB <- subset(studyB, rx=="Lev+5FU")
 
 # Convert treatment to number
 studyA$xnum <- studyA$rx
@@ -68,44 +96,13 @@ studyA$xnum[studyA$xnum == "Lev+5FU"] <- 2
 studyB$xnum[studyB$xnum == "Obs"] <- 0
 studyB$xnum[studyB$xnum == "Lev"] <- 1
 studyB$xnum[studyB$xnum == "Lev+5FU"] <- 2
-
-# Treatment groups 
-obsA <- subset(studyA, rx=="Obs")
-levA <- subset(studyA, rx=="Lev")
-combA <- subset(studyA, rx=="Lev+5FU")
-
-obsB <- subset(studyB, rx=="Obs")
-levB <- subset(studyB, rx=="Lev")
-combB <- subset(studyB, rx=="Lev+5FU")
-
-# Convert days to years
 ```
-
-```{r}
-cancerdeathdata <- read.table("ColonCancerDeathRate.txt")
-plot(cancerdeathdata)
-```
-
-Today, excluding skin cancer, colon cancer is the third most common type of cancer in the U.S., but there are now more treatments available, including immunotherapy and radiation therapy.
-
-
-
-# Data Source
-
-This dataset comes from one of the first successful trials of adjuvant chemotherapy for colon cancer, using a combination of levamisole and fluorouracil.
-
-The trial examined both Stage B2 (locally invasive) and Stage C (regional nodal involvement) colon cancer, but this dataset contains information only on subjects with Stage C.
-
-The dataset had a complicated format. For each subject, there were two rows of data entry: one measuring data related to the first recurrence of cancer, such as days until recurrence, and the other measuring data related to death, such as presence of cancer in other regions. The rows were categorized by the "etype" nominal variable, which we used to sort the data.
-
-In addition, each row had a "status" nominal variable, that indicated whether the etype was positive or negative – whether there was or was not recurrence, and whether or not the subject had died. This required additional sorting of the data.
-
-Each subject in the study was assigned a treatment – observation, levamisole (alone), or levamisole and fluorouracil – and this was recorded by the "rx" nominal variable for each row of data, allowing us to sort, analyze, and compare the effectiveness of the different treatments.
 
 
 # Description of Variables
 
-We first performed some exploratory data analysis to see which variables were affected by treatment. Most variables were not affected by treatment - only the "nodes" variable and the "time" variable were affected by treatment.
+We first performed exploratory data analysis to see which variables were affected by treatment. Most variables were not affected by treatment - only the "nodes" variable and the "time" variable were affected by treatment.
+
 
 ## Extent of Local Cancer Spread
 
@@ -157,7 +154,7 @@ ggbarplot(extentBdf, "Region", "Percentage", fill="Treatment", position=position
 
 ## Obstruction of Colon by Tumour
 
-The nominal variable "obstruct", which specified whether the colon was obstructed by the cancerous tumour, was not affected by treatment:
+The nominal variable "obstruct", which specified whether the colon was obstructed by the cancerous tumor, was not affected by treatment:
 
 ```{r}
 obstructAobs <- sum(studyA["rx"] == "Obs" & studyA["obstruct"] == "1")*100/sum(studyA$study==1)
@@ -188,10 +185,9 @@ ggbarplot(obstructBdf, "Obstruction", "Percentage", fill="Treatment", position=p
 ```
 
 
-
 ## Perforation of Colon by Tumour
 
-The nominal variable "perfor", which specified whether the colon was perforated by the cancerous tumour, was not affected by treatment:
+The nominal variable "perfor", which specified whether the colon was perforated by the cancerous tumor, was not affected by treatment:
 
 ```{r}
 perforAobs <- sum(studyA["rx"] == "Obs" & studyA["perfor"] == "1")*100/sum(studyA$study==1)
@@ -255,7 +251,6 @@ ggbarplot(adhereBdf, "Adherence", "Percentage", fill="Treatment", position=posit
 ```
 
 
-
 ## Number of Lymph Nodes with Detectable Cancer
 
 The discrete quantitative variable "nodes", which recorded the number of lymph nodes detected with cancer, was somewhat affected by treatment:
@@ -276,26 +271,17 @@ ggboxplot(studyB, x = "rx", y = "nodes",
           title = "Number of Cancerous Nodes Detected at Death")
 ```
 
-
-Thus, for the analysis, we looked at the discrete quantitative "time" variable (measured in days), to determine the effectiveness of the different treatment types.
-
+Thus, for the analysis, we looked at the discrete quantitative "time" variable (measured in days) on the effect of "status", to determine the effectiveness of the different treatment types and the Hazard Ratios for each treatment.
 
 
 # Research Questions
 
 We sought to answer questions about the effectiveness of the different treatment types:
-•	Which treatment had a lower recurrence rate and by how much?
-•	Which treatment had a greater amount of time until recurrence and by how much?
-•	Which treatment had a higher survival rate and by how much?
-•	Which treatment had a higher life expectancy and by how much?
 
-
-Treatments types and survival rate and reoccurance (studyA/B) Research
-hypothesis
-
-# Data Source and Description
-
-From the study Describe the data 2 events, 3 treatments
+*	Which treatment had a lower recurrence rate?
+*	Which treatment had a greater amount of time until recurrence
+*	Which treatment had a higher survival rate?
+* Which treatment had a higher life expectancy?
 
 # Data Exploration and Munging
 
@@ -303,7 +289,7 @@ From the study Describe the data 2 events, 3 treatments
 
 ### Box plots
 
-Reoccurance Data
+Recurrence Data
 
 ```{r}
 library(ggpubr)
@@ -338,7 +324,7 @@ tbl_summary(out, by=rx) %>%
 
 ### Survival Curve (Kaplan-Meier Survival Plot)
 
-Reoccurance data
+Recurrence data
 
 ```{r}
 # Kaplan-Meier Survival Plot (Survival Rate Over Time)
@@ -370,7 +356,7 @@ plot(survfit(Surv(years, status) ~ xnum, data=studyB),
 ```
 
 
-Survivial Curves with Confidence Intervals
+Survival Curves Detail with Confidence Intervals
 
 ```{r}
 # Clean ouput 
@@ -387,24 +373,19 @@ autoplot(fit)
 ```
 
 
-Distribution of status for each treatment Distribution of time for each
-treatment Box plots Survival curve Assumptions for T test T tests
-Kaplan-Meier survival analysis ## Assumptions for Cox
-
-
 ## T-Test
 
+A t-test was conducted to quickly see if there is a significance between the means between the control and combined therapy groups.
+
+Assumptions
+* Continuous variables
+* Simple Random Sample
+* Data is approximately normal
+* Large sample sizes
+* Homogeneity of variance 
+
+
 ```{r}
-# Calculate Percent Difference
-recA = sum(obsA$status==1)
-recAC = sum(combA$status==1)
-rA = recA/315
-rAC = recAC/304
-# Percent diff. 35% vs paper 40%
-difference = (rA-rAC)/((rA+rAC)/2)
-difference
-
-
 # T test proves sig. diff. in reoccurrence rates between obs and comb
 # treatment groups
 t.test(obsA$status, combA$status)
@@ -413,11 +394,43 @@ t.test(obsA$status, combA$status)
 # treatment groups
 t.test(obsB$status, combB$status)
 ```
-
+T tests for both recurrence and death means are significant with a p-value of 1.97e-05 and 0.001 respectively. 
 
 ## Cox Regression
 
-"Proportional hazards models are a class of survival models in statistics. Survival models relate the time that passes, before some event occurs, to one or more covariates that may be associated with that quantity of time. In a proportional hazards model, the unique effect of a unit increase in a covariate is multiplicative with respect to the hazard rate."
+The Proportional hazards model is a class of survival model. Survival models relate the time that passes, before some event occurs, to one or more covariates that may be associated with that quantity of time. In a proportional hazards model, the unique effect of a unit increase in a covariate is multiplicative in regard to the hazard rate.
+
+The Cox Regression or Proportional-Hazards Model can be estimated as follows:
+
+$$
+\lambda(t|X) = \lambda_0(t)*\text{exp}(\beta_1 X_1 + \ldots \beta_p X_p)
+\\
+$$
+
+where:
+
+$$
+\lambda:\text{hazard}
+\\
+\beta:\text{measure of impact of the covariates}
+\\
+X:\text{covariates}
+$$
+
+
+### Hypothesis
+
+Based on an exploration of the data, we will examine the following hypotheses:
+
+$$
+H_0: \beta = 1 \text{ There is no difference between the treatment Hazard Ratio and the control.}
+\\
+H_A: \beta < 1 \text{ The treatnent Harard Ratio is less than the control.}
+$$
+
+### Model
+
+The following is the Cox Hazard ratio model. The control group is 0, the single treatment group is 1, and the combined treatment is 2.
 
 ```{r}
 library(survival)
@@ -428,6 +441,11 @@ coxModelA %>%
   gtsummary::tbl_regression(exp = TRUE, label = xnum ~ "Treatment") %>%
   modify_caption("Table 3. Reoccurance Cox Regression")
 ```
+
+
+Given the Hazard Ratio of 0.98 for the levamisole treatment, it can be stated that this treatment only resulted in a 2% reduction in the cancer recurrence rate. A p-value of 0.89 for this metric also indicates that the result is not statistically significant.
+
+However, given the Hazard Ratio of 0.60 for the levamisole and fluorouracil treatment, it can be stated that this treatment  resulted in a 40% reduction in the cancer recurrence rate. A p-value of 1.58e-05 for this metric indicates that the result is statistically significant.
 
 
 ```{r}
@@ -441,10 +459,18 @@ coxModelB %>%
 ```
 
 
-This shows a 40% less reduction in the rate of cancer recurrence using
-combined therapy. The "Lev" single therapy only offered a 2% reduction
-in the reoccurance rate.
+Given the Hazard Ratio of 0.97 for the levamisole treatment, it can be stated that this treatment only resulted in a 3% reduction in the cancer death rate. A p-value of 0.80 for this metric also indicates that the result is not statistically significant.
+
+However, given the Hazard Ratio of 0.69 for the levamisole and fluorouracil treatment, it can be stated that this treatment  resulted in a 31% reduction in the cancer recurrence rate. A p-value of 0.002 for this metric indicates that the result is statistically significant.
+
 
 # Conclusions
 
-Significance/results from tests Future Study
+Overall, we have determined that there is a significant difference in the survival rate between the different groups. Given the recurrence and death rate p-values for the levamisole and fluorouracil group, we found that they were statistically significant and thus we are able to reject the null hypothesis for the combined treatments. This indicates that the hazard ratios between the two groups are statistically significant and could suggest that the combined treatment has a lower recurrence and death rate. For the levamisole group, we did not find any statistical significance in the recurrence or death rate, indicating that the null hypothesis must be rejected for both outcomes for that group. This indicates that there is no difference between the hazard ratio in the observed and levamisole groups.
+
+
+For future studies, additional combinations of drug therapies could be examined. Since this study was published over 20 years ago, advances in medicine could have led to the creation of new therapies that could be tested in addition to these medications. Additionally, the effects of the combined treatment on the spread of the cancer could be examined as well. The spread of cancer is an important consideration that should be examnied in addition to recurrence and death rates.
+
+
+
+
