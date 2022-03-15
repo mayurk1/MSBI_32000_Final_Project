@@ -104,6 +104,28 @@ studyB$xnum[studyB$xnum == "Lev+5FU"] <- 2
 We first performed exploratory data analysis to see which variables were affected by treatment. Most variables were not affected by treatment - only the "nodes" variable and the "time" variable were affected by treatment.
 
 
+Mean statistics per variable by treatment.
+
+
+```{r}
+library(gtsummary)
+trialA <- studyA %>% select(!c(id, xnum, differ, time, etype))
+trialA %>% 
+  tbl_summary(by = rx) %>%
+  modify_caption("Table 1. Reoccurance by Treatment")
+```
+
+
+```{r}
+library(gtsummary)
+trialB <- studyB %>% select(!c(id, xnum, differ, time, etype))
+trialB %>% 
+  tbl_summary(by = rx) %>%
+  modify_caption("Table 2. Death by Treatment")
+```
+
+
+
 ## Extent of Local Cancer Spread
 
 The nominal variable "extent", which recorded whether the cancer had spread to specific nearby regions, was not affected by treatment:
@@ -283,48 +305,34 @@ We sought to answer questions about the effectiveness of the different treatment
 *	Which treatment had a higher survival rate?
 * Which treatment had a higher life expectancy?
 
-# Data Exploration and Munging
+# Data Exploration
 
-## Distributions of Treatments
+## Box plots
 
-### Box plots
-
-Recurrence Data
+### Recurrence Data
 
 ```{r}
 library(ggpubr)
 ggboxplot(studyA, x = "rx", y = "years", 
           #color = "rx", palette = c("#00AFBB", "#E7B800", "#FC4E07"),
           order = c("Obs", "Lev", "Lev+5FU"),
-          ylab = "Years", xlab = "Treatment",)
+          ylab = "Years", xlab = "Treatment",
+          title = "Years Until Recurrence per Treatment")
 ```
 
-Death Data
+### Death Data
 
 ```{r}
 ggboxplot(studyB, x = "rx", y = "years", 
           #color = "rx", palette = c("#00AFBB", "#E7B800", "#FC4E07"),
           order = c("Obs", "Lev", "Lev+5FU"),
-          ylab = "Years", xlab = "Treatment",)
+          ylab = "Years", xlab = "Treatment",
+          title = "Years Until Death per Treatment")
 ```
 
-```{r}
-library(gtsummary)
-out <- studyA %>% select(status, rx)
-tbl_summary(out, by=rx) %>%
-  modify_caption("Table 1. Reoccurance by Treatment")
-```
+## Survival Curve (Kaplan-Meier Survival Plot)
 
-```{r}
-library(gtsummary)
-out <- studyB %>% select(status, rx)
-tbl_summary(out, by=rx) %>%
-  modify_caption("Table 2. Death by Treatment")
-```
-
-### Survival Curve (Kaplan-Meier Survival Plot)
-
-Recurrence data
+### Recurrence data
 
 ```{r}
 # Kaplan-Meier Survival Plot (Survival Rate Over Time)
@@ -332,15 +340,14 @@ library(survival)
 library(survminer)
 # Survival curve by treatment
 plot(survfit(Surv(years, status) ~ xnum, data=studyA),
-     ylab= "Proportion with no Reoccurance",
+     ylab= "Reoccurance",
      xlab = "Years",
      title = "Reoccurance Rate by Treatment",
-     col = c(4,2,3),
-     pch=c("df","df","df"))
+     col = c(4,2,3),)
 ```
 
 
-Survival Data
+### Survival Data
 
 ```{r}
 # Kaplan-Meier Survival Plot (Survival Rate Over Time)
@@ -348,7 +355,7 @@ library(survival)
 library(survminer)
 # Survival curve by treatment
 plot(survfit(Surv(years, status) ~ xnum, data=studyB),
-     ylab= "Proportion with no Death",
+     ylab= "Death",
      xlab = "Years",
      title = "Death Rate by Treatment",
      col = c(4,2,3)
@@ -356,45 +363,50 @@ plot(survfit(Surv(years, status) ~ xnum, data=studyB),
 ```
 
 
-Survival Curves Detail with Confidence Intervals
+## Survival Curves Detail with Confidence Intervals
+
+### Recurrence Data
 
 ```{r}
-# Clean ouput 
 library(ggfortify)
 library(survival)
-fit <- survfit(Surv(years, status) ~ rx, data=studyA)
-autoplot(fit)
+fitA <- survfit(Surv(years, status) ~ rx, data=studyA)
+autoplot(fitA)
+```
+
+### Death Data
+
+```{r}
+library(ggfortify)
+library(survival)
+fitB <- survfit(Surv(years, status) ~ rx, data=studyB)
+autoplot(fitB)
+```
+
+# Data Analysis 
+
+## Chi Squared Independence
+
+Provided are the mean summaries and Chi Squared P-values. Sex and status are found to be statistically different between the three treatment groups as their p-value is less than the alpha of 0.05.
+
+```{r}
+library(gtsummary)
+trialA <- studyA %>% select(!c(id, xnum, differ, time, etype))
+trialA %>% 
+  tbl_summary(by = rx) %>%
+  add_p(test = all_continuous() ~ "t.test") %>%
+  modify_caption("Table 3. Reoccurance by Treatment")
 ```
 
 
 ```{r}
-fit <- survfit(Surv(years, status) ~ rx, data=studyB)
-autoplot(fit)
+library(gtsummary)
+trialB <- studyB %>% select(!c(id, xnum, differ, time, etype))
+trialB %>% 
+  tbl_summary(by = rx) %>%
+  add_p(test = all_continuous() ~ "t.test") %>%
+  modify_caption("Table 4. Death by Treatment")
 ```
-
-
-## T-Test
-
-A t-test was conducted to quickly see if there is a significance between the means between the control and combined therapy groups.
-
-Assumptions
-* Continuous variables
-* Simple Random Sample
-* Data is approximately normal
-* Large sample sizes
-* Homogeneity of variance 
-
-
-```{r}
-# T test proves sig. diff. in reoccurrence rates between obs and comb
-# treatment groups
-t.test(obsA$status, combA$status)
-
-# T test also proves sig. diff. in death rates between obs and comb
-# treatment groups
-t.test(obsB$status, combB$status)
-```
-T tests for both recurrence and death means are significant with a p-value of 1.97e-05 and 0.001 respectively. 
 
 ## Cox Regression
 
@@ -420,7 +432,7 @@ $$
 
 ### Hypothesis
 
-Based on an exploration of the data, we will examine the following hypotheses:
+Based on an exploration of the data, we will examine the following hypotheses, for each treatment option:
 
 $$
 H_0: \beta = 1 \text{ There is no difference between the treatment Hazard Ratio and the control.}
@@ -437,15 +449,15 @@ library(survival)
 coxModelA <- coxph(Surv(time, status) ~ xnum, data=studyA)
 summary(coxModelA)
 
-coxModelA %>% 
+coxModelA %>%
   gtsummary::tbl_regression(exp = TRUE, label = xnum ~ "Treatment") %>%
-  modify_caption("Table 3. Reoccurance Cox Regression")
+  modify_caption("Table 5. Reoccurance Cox Regression")
 ```
 
 
-Given the Hazard Ratio of 0.98 for the levamisole treatment, it can be stated that this treatment only resulted in a 2% reduction in the cancer recurrence rate. A p-value of 0.89 for this metric also indicates that the result is not statistically significant.
+Given the Hazard Ratio of 0.98 for the levamisole treatment, it can be stated that this treatment only resulted in a 2% reduction in the cancer recurrence rate. A p-value of 0.89 for this metric also indicates that the result is not statistically significant, as it is greater than the alpha value of 0.05.
 
-However, given the Hazard Ratio of 0.60 for the levamisole and fluorouracil treatment, it can be stated that this treatment  resulted in a 40% reduction in the cancer recurrence rate. A p-value of 1.58e-05 for this metric indicates that the result is statistically significant.
+However, given the Hazard Ratio of 0.60 for the levamisole and fluorouracil treatment, it can be stated that this treatment  resulted in a 40% reduction in the cancer recurrence rate. A p-value of 1.58e-05 for this metric indicates that the result is statistically significant, as it is less than the alpha value of 0.05.
 
 
 ```{r}
@@ -455,7 +467,29 @@ summary(coxModelA)
 
 coxModelB %>% 
   gtsummary::tbl_regression(exp = TRUE, label = list(xnum ~ "Treatment")) %>%
-  modify_caption("Table 4. Death Rate Cox Regression")
+  modify_caption("Table 6. Death Rate Cox Regression")
+```
+
+
+### Test assumptions
+
+It is assumed that treatment groups were randomly distributed within the sample.
+Assume random censoring of the data (every data point is collected in this study).
+
+Perform the Schoenfeld Individual test to measure for a constant hazard ratio over time. This means that there are no sudden deviations from the survival curve over time. Assumption is met if the data is not significant (P>0.05). 
+
+### Recurrence Data
+
+```{r}
+test.ph <- cox.zph(coxModelA)
+ggcoxzph(test.ph)
+```
+
+### Death Data
+
+```{r}
+test.phB <- cox.zph(coxModelB)
+ggcoxzph(test.phB)
 ```
 
 
@@ -469,8 +503,8 @@ However, given the Hazard Ratio of 0.69 for the levamisole and fluorouracil trea
 Overall, we have determined that there is a significant difference in the survival rate between the different groups. Given the recurrence and death rate p-values for the levamisole and fluorouracil group, we found that they were statistically significant and thus we are able to reject the null hypothesis for the combined treatments. This indicates that the hazard ratios between the two groups are statistically significant and could suggest that the combined treatment has a lower recurrence and death rate. For the levamisole group, we did not find any statistical significance in the recurrence or death rate, indicating that the null hypothesis must be rejected for both outcomes for that group. This indicates that there is no difference between the hazard ratio in the observed and levamisole groups.
 
 
-For future studies, additional combinations of drug therapies could be examined. Since this study was published over 20 years ago, advances in medicine could have led to the creation of new therapies that could be tested in addition to these medications. Additionally, the effects of the combined treatment on the spread of the cancer could be examined as well. The spread of cancer is an important consideration that should be examnied in addition to recurrence and death rates.
+For future studies, additional combinations of drug therapies could be examined. Since this study was published over 20 years ago, advances in medicine could have led to the creation of new therapies that could be tested in addition to these medications. Additionally, the effects using just the new therapy alone should be tested as well. It is noted that ethical concerns may prevent such an experiment from occurring. Finally, the spread of cancer is an important consideration that should be examined in addition to recurrence and death rates. 
 
 
-
+To conclude, the well run study provided strong evidence to suggest that the levamisole and fluorouracil treatment can offer a significant difference in recurrence and survival rates compared to the observed and the levamisole alone groups. Using a Cox Regression model, we were able to see a 40% reduction in the Hazard Ratio compared to the control. While these results are promising, future studies into additional single and multiple treatments must be conducted.
 
